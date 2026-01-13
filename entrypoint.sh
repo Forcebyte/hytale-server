@@ -14,6 +14,8 @@ shutdown_handler() {
         kill -TERM "$SERVER_PID" 2>/dev/null || true
         wait "$SERVER_PID" 2>/dev/null || true
     fi
+    # Clean up auth pipe if it exists
+    rm -f /tmp/hytale-stdin 2>/dev/null || true
     echo "Server stopped."
     exit 0
 }
@@ -208,19 +210,102 @@ echo "=========================================="
 echo ""
 echo "Java options: $JAVA_OPTS"
 echo ""
-echo "If this is your first time running the server,"
-echo "you will need to authenticate:"
-echo "  1. Run: auth login device"
-echo "  2. Click the link provided"
-echo "  3. Run: auth persistence Encrypted"
-echo ""
-echo "To detach from this console without stopping"
-echo "the server, press: Ctrl+P, Ctrl+Q"
-echo ""
-echo "=========================================="
-echo ""
 
 cd /data
-java $JAVA_OPTS -jar Server/HytaleServer.jar --assets Assets.zip &
-SERVER_PID=$!
-wait $SERVER_PID
+
+AUTH_FILE="/data/auth.enc"
+AUTH_STATE_DIR="/tmp/hytale-auth-state"
+
+# Clean up function
+cleanup_auth() {
+    rm -f /tmp/hytale-commands
+    rm -rf "$AUTH_STATE_DIR"
+}
+
+if [ ! -f "$AUTH_FILE" ]; then
+    # No auth.enc found - need to run automatic authentication
+    echo "No authentication credentials found (auth.enc missing)"
+    echo ""
+    echo "Starting automatic authentication flow..."
+    echo "When the URL appears below, open it in your browser"
+    echo "to complete authentication."
+    echo ""
+    echo "=========================================="
+    echo ""
+
+    # Set up state tracking directory
+    rm -rf "$AUTH_STATE_DIR"
+    mkdir -p "$AUTH_STATE_DIR"
+    trap cleanup_auth EXIT
+
+    # Create a file that we'll use to send commands to the server
+    # Using tail -f on this file will keep stdin open and allow us to append commands
+    CMD_FILE="/tmp/hytale-commands"
+    rm -f "$CMD_FILE"
+    touch "$CMD_FILE"
+
+    # Start server with stdin from tail -f (which follows the command file)
+    tail -f "$CMD_FILE" | java $JAVA_OPTS -jar Server/HytaleServer.jar --assets Assets.zip 2>&1 | while IFS= read -r line; do
+        # Print the line (preserve server output)
+        echo "$line"
+
+        # Check if we need to send auth login device command
+        if [ ! -f "$AUTH_STATE_DIR/auth_sent" ] && echo "$line" | grep -q "Auth credential store: Memory"; then
+            touch "$AUTH_STATE_DIR/auth_sent"
+            # Small delay to ensure server console is ready
+            (
+                sleep 2
+                echo ""
+                echo "=========================================="
+                echo "Initiating device authentication..."
+                echo "=========================================="
+                echo ""
+                echo "auth login device" >> "$CMD_FILE"
+            ) &
+        fi
+
+        # Check if authentication was successful
+        if [ ! -f "$AUTH_STATE_DIR/persist_sent" ] && echo "$line" | grep -q "Authentication successful!"; then
+            touch "$AUTH_STATE_DIR/persist_sent"
+            # Small delay before sending persistence command
+            (
+                sleep 1
+                echo ""
+                echo "=========================================="
+                echo "Authentication successful!"
+                echo "Persisting credentials..."
+                echo "=========================================="
+                echo ""
+                echo "auth persistence Encrypted" >> "$CMD_FILE"
+            ) &
+        fi
+
+        # Check if persistence was successful
+        if echo "$line" | grep -q "Swapped credential store to:"; then
+            echo ""
+            echo "=========================================="
+            echo "Credentials saved to auth.enc"
+            echo "Future restarts will auto-authenticate."
+            echo "=========================================="
+            echo ""
+        fi
+    done &
+    SERVER_PID=$!
+    wait $SERVER_PID
+    
+    # Clean up
+    rm -f "$CMD_FILE"
+else
+    # auth.enc exists - normal startup
+    echo "Authentication credentials found (auth.enc)"
+    echo ""
+    echo "To detach from this console without stopping"
+    echo "the server, press: Ctrl+P, Ctrl+Q"
+    echo ""
+    echo "=========================================="
+    echo ""
+
+    java $JAVA_OPTS -jar Server/HytaleServer.jar --assets Assets.zip &
+    SERVER_PID=$!
+    wait $SERVER_PID
+fi
