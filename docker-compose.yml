@@ -1,0 +1,19 @@
+# Check the console on the first run, you will have to authenticate the session with your hytale account or the server won't start
+# After that the image is supposed to save the auth token but I'm not sure how much time will pass until hytale revokes the token
+# In case it doesn't work anymore just check the logs, it will probably show another prompt to authenticate the session
+
+services:
+  hytale:
+    image: ghcr.io/brodino96/hytale-server:latest
+    container_name: hytale-server
+    stdin_open: true
+    tty: true
+    ports:
+      - "5520:5520/udp"
+    volumes:
+      - ./data:/data
+    environment:
+      - JAVA_OPTS=-Xmx2G
+      - UPDATE_ON_STARTUP=true
+      - PATCHLINE=release
+    restart: unless-stopped
