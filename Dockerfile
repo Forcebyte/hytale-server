@@ -1,4 +1,4 @@
-# v1.0.0
+# v1.1.0
 
 FROM eclipse-temurin:25-jre
 
