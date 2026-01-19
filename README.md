@@ -7,6 +7,14 @@ A Docker container for running a Hytale dedicated game server with automatic upd
 - Automatic server download and installation using the official `hytale-downloader`
 - Automatic update checking on container startup (optional)
 
+## Requirements
+
+- Docker and Docker Compose
+- A valid Hytale account for authentication
+- Some amounts of ram allocated (configurable via `JAVA_OPTS`)
+
+I have only tested the image running on linux but if docker does what it promises it should work on any os that supports docker 
+
 ## Quick Start
 
 ### Using Docker Compose (Recommended)
@@ -102,12 +110,6 @@ Set `UPDATE_ON_STARTUP=true` in your environment variables and restart the conta
 ```bash
 docker compose down && docker compose up -d
 ```
-
-## Requirements
-
-- Docker and Docker Compose
-- A valid Hytale account for authentication
-- Minimum 2GB RAM allocated (configurable via `JAVA_OPTS`)
 
 ## License
 
