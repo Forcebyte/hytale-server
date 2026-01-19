@@ -32,7 +32,8 @@ jobs:
       - name: Check if ARM tag exists on GHCR
         id: check_tag
         run: |
-          if docker manifest inspect ghcr.io/${{ github.repository_owner }}/hytale-server:${{ steps.version.outputs.version }}-arm64 >/dev/null 2>&1; then
+          REPO_OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          if docker manifest inspect ghcr.io/$REPO_OWNER_LC/hytale-server:${{ steps.version.outputs.version }}-arm64 >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
             echo "Tag ${{ steps.version.outputs.version }}-arm64 already exists"
           else
@@ -59,6 +60,7 @@ jobs:
           context: .
           push: true
           platforms: linux/arm64
+          REPO_OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           tags: |
-            ghcr.io/${{ github.repository_owner }}/hytale-server:${{ steps.version.outputs.version }}-arm64
-            ghcr.io/${{ github.repository_owner }}/hytale-server:latest-arm64
+            ghcr.io/${{ steps.version.outputs.version && ' ' }}$REPO_OWNER_LC/hytale-server:${{ steps.version.outputs.version }}-arm64
+            ghcr.io/$REPO_OWNER_LC/hytale-server:latest-arm64
