@@ -19,7 +19,7 @@ I have only tested the image running on linux but if docker does what it promise
 
 ### Using Docker Compose (Recommended)
 
-1. Clone this repository or create a [docker-compose.yml](https://github.com/Brodino96/hytale-server/blob/main/docker-compose.yml)
+1. Copy or download the [docker-compose.yml](https://github.com/Brodino96/hytale-server/releases/latest)
 
 2. Start the server:
 
