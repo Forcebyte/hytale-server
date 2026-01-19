@@ -1,6 +1,7 @@
 # Hytale Docker Server
 
-A Docker container for running a Hytale dedicated game server with automatic updates and persistent data storage
+A Docker container for running a Hytale dedicated game server with automatic updates.  
+This is simply an easier way to deploy a server, it uses tools provided directly from Hytale.
 
 ## Features
 
