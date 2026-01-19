@@ -4,7 +4,7 @@
 
 services:
   hytale:
-    image: ghcr.io/brodino96/hytale-server:latest
+    image: brodino96/hytale-server:latest
     container_name: hytale-server
     stdin_open: true
     tty: true
